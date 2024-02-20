@@ -9,13 +9,12 @@
 
 #include<wrl.h>
 
-
+#include"WinApp.h"
 
 class Input {
 public:
-	template <class T>using Comptr = Microsoft::WRL::ComPtr<T>;
-
-	void Initialize(HINSTANCE hInstance,HWND hwnd);
+	
+	void Initialize(WinApp* winApp);
 
 	void Update();
 
@@ -26,6 +25,8 @@ public:
 
 
 private:
+	WinApp* winApp_ = nullptr;
+
 	Microsoft::WRL::ComPtr<IDirectInputDevice8> keyboard;
 	Microsoft::WRL::ComPtr<IDirectInput8> directInput;
 
