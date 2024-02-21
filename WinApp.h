@@ -24,4 +24,3 @@ private:
 
 	MSG msg{};  // メッセージ
 };
-
