@@ -22,7 +22,6 @@ void WinApp::Initialize()
     const int window_height = 720;  // 縦幅
 
     // ウィンドウクラスの設定
-    WNDCLASSEX w{};
     w.cbSize = sizeof(WNDCLASSEX);
     w.lpfnWndProc = (WNDPROC)WindowProc; // ウィンドウプロシージャを設定
     w.lpszClassName = L"DirectXGame"; // ウィンドウクラス名
@@ -37,7 +36,7 @@ void WinApp::Initialize()
     AdjustWindowRect(&wrc, WS_OVERLAPPEDWINDOW, false);
 
     // ウィンドウオブジェクトの生成
-    HWND hwnd = CreateWindow(w.lpszClassName, // クラス名
+    hwnd = CreateWindow(w.lpszClassName, // クラス名
         L"DirectXGame",         // タイトルバーの文字
         WS_OVERLAPPEDWINDOW,        // 標準的なウィンドウスタイル
         CW_USEDEFAULT,              // 表示X座標（OSに任せる）
@@ -51,10 +50,21 @@ void WinApp::Initialize()
 
     // ウィンドウを表示状態にする
     ShowWindow(hwnd, SW_SHOW);
-
-    MSG msg{};  // メッセージ
 }
 
-void WinApp::Update()
+bool WinApp::Update()
 {
+    if (PeekMessage(&msg, nullptr, 0, 0, PM_REMOVE)) {
+        TranslateMessage(&msg);
+        DispatchMessage(&msg);
+
+        if (msg.message == WM_QUIT) {
+            return true;
+        }
+        return false;
+    }
+}
+
+void WinApp::Finalize(){
+    UnregisterClass(w.lpszClassName,w.hInstance);
 }
