@@ -2,6 +2,7 @@
 
 #include<DirectXMath.h>
 #include"BufferResource.h"
+#include"External/imgui/imgui.h"
 
 using namespace Microsoft::WRL;
 using namespace DirectX;
@@ -12,15 +13,69 @@ void Sprite::Initialize(DirectXCommon* dxCommon, SpriteCommon* common)
 	dxCommon_ = dxCommon;
 	common_ = common;
 
+	DirectX::ScratchImage mipImages = common->LoadTexture(L"Resources/mario.jpg");
+
+	const DirectX::TexMetadata& metaData = mipImages.GetMetadata();
+	ID3D12Resource* textureResource = CreateTextureResource(dxCommon_->GetDevice(), metaData);
+	common_->UploadTextureData(textureResource, mipImages);
+
+
+	D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc{};
+	srvDesc.Format = metaData.format;
+	srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+	srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
+	srvDesc.Texture2D.MipLevels = UINT(metaData.mipLevels);
+
+	D3D12_CPU_DESCRIPTOR_HANDLE textureSrvHandleCPU = dxCommon_->GetSrvDescriptorHeap()->GetCPUDescriptorHandleForHeapStart();
+	textureSrvHandleGPU = dxCommon_->GetSrvDescriptorHeap()->GetGPUDescriptorHandleForHeapStart();
+
+	textureSrvHandleCPU.ptr += dxCommon_->GetDevice()->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+	textureSrvHandleGPU.ptr += dxCommon_->GetDevice()->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+
+	dxCommon_->GetDevice()->CreateShaderResourceView(textureResource, &srvDesc, textureSrvHandleCPU);
+
 	CreateVertex();
+	CreateIndex();
 	CreateMaterial();
 	CreateWVP();
+}
+
+void Sprite::Update()
+{
+	transform.translate = { position.x,position.y,0 };
+	transform.rotate = { 0,0,rotation};
+
+	materialData->color = color_;
+	transform.scale = { size.x,size.y,1.0f };
+
+	vertexData[0].position = { -0.5f,-0.5f,0.0f,1.0f };
+	vertexData[0].texcoord = { 0.0f,1.0f };
+
+	vertexData[1].position = { -0.5f,+0.5f,0.0f,1.0f };
+	vertexData[1].texcoord = { 0.0f,0.0f };
+
+	vertexData[2].position = { +0.5f,-0.5f,0.0f,1.0f };
+	vertexData[2].texcoord = { 1.0f,1.0f };
+
+	vertexData[3].position = { +0.5f,+0.5f,0.0f,1.0f };
+	vertexData[3].texcoord = { 1.0f,0.0f };
+
+
+	ImGui::Begin("Tevture");
+	ImGui::DragFloat3("Pos", &transform.translate.x, 0.1f);
+
+	ImGui::DragFloat3("UV-Pos", &uvTransform.translate.x, 0.01f,-10.0f,10.0f);
+	ImGui::SliderAngle("UV-Rot", &uvTransform.rotate.z);
+	ImGui::DragFloat3("UV-Scale", &uvTransform.scale.x, 0.01f, -10.0f, 10.0f);
+
+	
+	ImGui::End();
 }
 
 void Sprite::Draw()
 {
 
-	transform.rotate.y += 0.03f;
+	//transform.rotate.y += 0.03f;
 	XMMATRIX scaleMatrix = XMMatrixScalingFromVector(XMLoadFloat3(&transform.scale));
 	XMMATRIX rotateMatrix = XMMatrixRotationRollPitchYawFromVector(XMLoadFloat3(&transform.rotate));
 	XMMATRIX translationMatrix = XMMatrixTranslationFromVector(XMLoadFloat3(&transform.translate));
@@ -28,6 +83,8 @@ void Sprite::Draw()
 	XMMATRIX rotationAndScaleMatrix = XMMatrixMultiply(rotateMatrix, scaleMatrix);
 
 	XMMATRIX worldMatrix = XMMatrixMultiply(rotationAndScaleMatrix, translationMatrix);
+
+
 
 	*wvpData = worldMatrix;
 
@@ -54,7 +111,22 @@ void Sprite::Draw()
 	dxCommon_->GetCommandList()->SetGraphicsRootSignature(common_->GetRootSignature());
 	dxCommon_->GetCommandList()->SetPipelineState(common_->GetPipelineState());
 
+
+
+	XMMATRIX uvScaleMatrix = XMMatrixScalingFromVector(XMLoadFloat3(&uvTransform.scale));
+	XMMATRIX uvRotateMatrix = XMMatrixRotationRollPitchYawFromVector(XMLoadFloat3(&uvTransform.rotate));
+	XMMATRIX uvTranslationMatrix = XMMatrixTranslationFromVector(XMLoadFloat3(&uvTransform.translate));
+
+	XMMATRIX uvRotationAndScaleMatrix = XMMatrixMultiply(uvRotateMatrix, uvScaleMatrix);
+
+	XMMATRIX uvWorldMatrix = XMMatrixMultiply(uvRotationAndScaleMatrix, uvTranslationMatrix);
+	materialData->uvTransform = uvWorldMatrix;
+
+
 	dxCommon_->GetCommandList()->IASetVertexBuffers(0, 1, &vertexBufferView);
+
+	dxCommon_->GetCommandList()->IASetIndexBuffer(&indexBufferView);
+
 
 	dxCommon_->GetCommandList()->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
@@ -62,35 +134,66 @@ void Sprite::Draw()
 
 	dxCommon_->GetCommandList()->SetGraphicsRootConstantBufferView(1, wvpResource->GetGPUVirtualAddress());
 
-	dxCommon_->GetCommandList()->DrawInstanced(3, 1, 0, 0);
+	dxCommon_->GetCommandList()->SetGraphicsRootDescriptorTable(2, textureSrvHandleGPU);
+
+	dxCommon_->GetCommandList()->DrawIndexedInstanced(6, 1, 0, 0, 0);
 
 }
 
 void Sprite::CreateVertex()
 {
-	vertexResource = CreateBufferResource(dxCommon_->GetDevice(), sizeof(XMFLOAT4) * 3);
+	vertexResource = CreateBufferResource(dxCommon_->GetDevice(), sizeof(VertexData) * 4);
 
 	vertexBufferView.BufferLocation = vertexResource->GetGPUVirtualAddress();
-	vertexBufferView.SizeInBytes = sizeof(DirectX::XMFLOAT4) * 3;
-	vertexBufferView.StrideInBytes = sizeof(DirectX::XMFLOAT4);
+	vertexBufferView.SizeInBytes = sizeof(VertexData) * 4;
+	vertexBufferView.StrideInBytes = sizeof(VertexData);
 
 
-	XMFLOAT4* vertexData = nullptr;
 	vertexResource->Map(0, nullptr, reinterpret_cast<void**>(&vertexData));
 
-	vertexData[0] = { -0.5f,-0.5f,0.0f,1.0f };
-	vertexData[1] = { +0.f,+0.5f,0.0f,1.0f };
-	vertexData[2] = { +0.5f,-0.5f,0.0f,1.0f };
+	vertexData[0].position = { -0.5f,-0.5f,0.0f,1.0f };
+	vertexData[0].texcoord = { 0.0f,1.0f };
+
+	vertexData[1].position = { -0.5f,+0.5f,0.0f,1.0f };
+	vertexData[1].texcoord = { 0.0f,0.0f };
+
+	vertexData[2].position = { +0.5f,-0.5f,0.0f,1.0f };
+	vertexData[2].texcoord = { 1.0f,1.0f };
+
+	vertexData[3].position = { +0.5f,+0.5f,0.0f,1.0f };
+	vertexData[3].texcoord = { 1.0f,0.0f };
+
+	//vertexData[3].position = { -0.5f,+0.5f,0.0f,1.0f };
+	//vertexData[3].texcoord = { 0.0f,0.0f };
+
+	//vertexData[5].position = { +0.5f,-0.5f,0.0f,1.0f };
+	//vertexData[5].texcoord = { 1.0f,1.0f };
+}
+
+void Sprite::CreateIndex()
+{
+	indexResource = CreateBufferResource(dxCommon_->GetDevice(), sizeof(uint32_t) * 6);
+
+	indexBufferView.BufferLocation = indexResource->GetGPUVirtualAddress();
+	indexBufferView.SizeInBytes = sizeof(uint32_t) * 6;
+	indexBufferView.Format = DXGI_FORMAT_R32_UINT;
+
+	uint32_t* indexData = nullptr;
+	indexResource->Map(0, nullptr, reinterpret_cast<void**>(&indexData));
+
+	indexData[0] = 0; indexData[1] = 1; indexData[2] = 2;
+	indexData[3] = 1; indexData[4] = 3; indexData[5] = 2;
+
 }
 
 void Sprite::CreateMaterial()
 {
-	materialResource = CreateBufferResource(dxCommon_->GetDevice(), sizeof(XMFLOAT4));
-	XMFLOAT4* materialData = nullptr;
+	materialResource = CreateBufferResource(dxCommon_->GetDevice(), sizeof(MaterialData));
+	
 	materialResource->Map(0, nullptr, reinterpret_cast<void**>(&materialData));
 
-	*materialData = color_;
-
+	materialData->color = color_;
+	materialData->uvTransform = XMMatrixIdentity();
 
 }
 

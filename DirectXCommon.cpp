@@ -23,7 +23,7 @@ void DirectXCommon::Initialize(WinApp* winApp)
     DepthBufferInitialize();
     FenceInitialize();
 
-     rtvDescriptorHeap = CreateDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_RTV,2,false);
+    rtvDescriptorHeap = CreateDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_RTV,2,false);
 
     srvDescriptorHeap = CreateDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, 128, true);
 
@@ -378,5 +378,5 @@ ID3D12DescriptorHeap* DirectXCommon::CreateDescriptorHeap(D3D12_DESCRIPTOR_HEAP_
     HRESULT result = device->CreateDescriptorHeap(&descriptorHeapDesc, IID_PPV_ARGS(&descriptorHeap));
     assert(SUCCEEDED(result));
 
-    return nullptr;
+    return descriptorHeap;
 }

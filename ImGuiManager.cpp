@@ -26,7 +26,7 @@ void ImGuiManager::NewFrame()
 	ImGui::NewFrame();
 }
 
-void ImGuiManager::CreateCount()
+void ImGuiManager::CreateCommand()
 {
 	ImGui::Render();
 }
@@ -49,7 +49,7 @@ ImGuiManager::~ImGuiManager()
 	ImGui::DestroyContext();
 }
 
-void ImGuiManager::ShowDem0()
+void ImGuiManager::ShowDemo()
 {
 	ImGui::ShowDemoWindow();
 }

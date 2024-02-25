@@ -7,7 +7,7 @@ public:
 	static void Initialize(HWND hwnd, DirectXCommon* dxCommon);
 
 	static void NewFrame();
-	static void CreateCount();
+	static void CreateCommand();
 	static void CommandeExcute(ID3D12GraphicsCommandList* commandList);
 	static ImGuiManager* Create();
 
@@ -15,6 +15,6 @@ public:
 	~ImGuiManager();
 
 public:
-	void ShowDem0();
+	void ShowDemo();
 };
 
