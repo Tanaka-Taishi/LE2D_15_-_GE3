@@ -7,6 +7,8 @@
 
 #include"ImGuiManager.h"
 
+#include<vector>
+
 
 // Windowsアプリでのエントリーポイント(main関数)
 int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
@@ -32,8 +34,15 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
     SpriteCommon* common = new SpriteCommon();
     common->Initialize(dxCommon_);
 
-    Sprite* sprite = new Sprite();
-    sprite->Initialize(dxCommon_, common);
+   // Sprite* sprite = new Sprite();
+   // sprite->Initialize(dxCommon_, common);
+
+    std::vector<Sprite*> sprite;
+    for (int i = 0; i < 5;i++) {
+        Sprite* temp = new Sprite();
+        temp->Initialize(common);
+        sprite.push_back(temp);
+    }
 
     // ゲームループ
     while (true) {
@@ -45,25 +54,25 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 
         input_->Update();
 
-        DirectX::XMFLOAT2 pos = sprite->GetPosition();
-        pos.x += 0.01;
-        sprite->SetPosition(pos);
-
-        float rot = sprite->GetRotation();
-        rot += 0.005f;
-        sprite->SetRotation(rot);
-
-
-        DirectX::XMFLOAT4 color = sprite->GetColor();
-        color.x -= 0.01f;
-        if (color.x < 0) {
-            color.x = 1.0f;
-        }
-        sprite->SetColor(color);
-
-        DirectX::XMFLOAT2 size = sprite->GetSize();
-        size.y += 1;
-        sprite->SetSize(size);
+       // DirectX::XMFLOAT2 pos = sprite->GetPosition();
+       // pos.x += 0.01;
+       // sprite->SetPosition(pos);
+       //
+       // float rot = sprite->GetRotation();
+       // rot += 0.005f;
+       // sprite->SetRotation(rot);
+       //
+       //
+       // DirectX::XMFLOAT4 color = sprite->GetColor();
+       // color.x -= 0.01f;
+       // if (color.x < 0) {
+       //     color.x = 1.0f;
+       // }
+       // sprite->SetColor(color);
+       //
+       // DirectX::XMFLOAT2 size = sprite->GetSize();
+       // size.y += 0.01f;
+       // sprite->SetSize(size);
 
 
         sprite->Update();

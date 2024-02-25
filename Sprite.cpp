@@ -88,7 +88,7 @@ void Sprite::Draw()
 
 	*wvpData = worldMatrix;
 
-	XMMATRIX cameraScaleMatrix = XMMatrixScalingFromVector(XMLoadFloat3(&transform.scale));
+	XMMATRIX cameraScaleMatrix = XMMatrixScalingFromVector(XMLoadFloat3(&cameraTransform.scale));
 	XMMATRIX cameraRotateMatrix = XMMatrixRotationRollPitchYawFromVector(XMLoadFloat3(&cameraTransform.rotate));
 	XMMATRIX cameraTranslationMatrix = XMMatrixTranslationFromVector(XMLoadFloat3(&cameraTransform.translate));
 
