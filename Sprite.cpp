@@ -57,8 +57,8 @@ void Sprite::Update()
 	float tex_top     = textureLeftTop.y / metaData.height;
 	float tex_bottom = (textureLeftTop.y + textureSize.y) / metaData.height;
 
-	vertexData[1].texcoord = { tex_left,tex_bottom };
-	vertexData[0].texcoord = { tex_left,tex_top };
+	vertexData[0].texcoord = { tex_left,tex_bottom };
+	vertexData[1].texcoord = { tex_left,tex_top };
 	vertexData[2].texcoord = { tex_right,tex_bottom };
 	vertexData[3].texcoord = { tex_right,tex_top };
 
@@ -217,4 +217,6 @@ void Sprite::AdjustTextureSize()
 	const DirectX::TexMetadata& metaData = TextureManager::GetInstance()->GetMetaData(textureIndex_);
 	textureSize.x = static_cast<float>(metaData.width);
 	textureSize.y = static_cast<float>(metaData.height);
+
+	size = textureSize;
 }

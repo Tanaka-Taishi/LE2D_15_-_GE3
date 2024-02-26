@@ -110,7 +110,7 @@ private:
 	float rotation = 0;
 
 
-	DirectX::XMFLOAT2 size = { 512,512 };
+	DirectX::XMFLOAT2 size = { 0,0 };
 
 	DirectX::XMFLOAT2 anchorPoint = { 0.5,0.5 };
 
