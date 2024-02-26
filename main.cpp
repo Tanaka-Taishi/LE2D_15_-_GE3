@@ -9,6 +9,8 @@
 
 #include<vector>
 
+#include"TextureManager.h"
+
 
 // Windowsアプリでのエントリーポイント(main関数)
 int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
@@ -34,13 +36,16 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
     SpriteCommon* common = new SpriteCommon();
     common->Initialize(dxCommon_);
 
-   // Sprite* sprite = new Sprite();
-   // sprite->Initialize(dxCommon_, common);
+
+    TextureManager::GetInstance()->Initialize(dxCommon_);
+    TextureManager::GetInstance()->LoadTexture(L"Resources/mario.jpg");
+
 
     std::vector<Sprite*> sprite;
     for (int i = 0; i < 5;i++) {
         Sprite* temp = new Sprite();
-        temp->Initialize(common);
+        temp->Initialize(common, L"Resources/mario.jpg");
+        temp->SetPosition({ (float)i * 120,0 });
         sprite.push_back(temp);
     }
 
@@ -75,21 +80,27 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
        // sprite->SetSize(size);
 
 
-        sprite->Update();
-
+        for (int i = 0; i < 5; i++) {
+            sprite[i]->Update();
+        }
         ImGuiManager::CreateCommand();
         dxCommon_->PreDraw();
         
 
 
-        sprite->Draw();
-
+        for (int i = 0; i < 5; i++) {
+            sprite[i]->Draw();
+        }
         ImGuiManager::CommandeExcute(dxCommon_->GetCommandList());
         // ４．描画コマンドここまで
         dxCommon_->PostDraw();
     }
 
-    delete sprite;
+    for (int i = 0; i < 5; i++) {
+        delete sprite[i];
+    }
+    TextureManager::GetInstance()->Finalize();
+
     delete common;
     delete imgui;
 

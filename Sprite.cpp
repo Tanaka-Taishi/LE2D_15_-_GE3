@@ -4,36 +4,18 @@
 #include"BufferResource.h"
 #include"External/imgui/imgui.h"
 
+#include"TextureManager.h"
 using namespace Microsoft::WRL;
 using namespace DirectX;
 
-void Sprite::Initialize(DirectXCommon* dxCommon, SpriteCommon* common)
+void Sprite::Initialize(SpriteCommon* common, std::wstring textureFilePath)
 {
 
-	dxCommon_ = dxCommon;
+	dxCommon_ = common_;
 	common_ = common;
-
-	DirectX::ScratchImage mipImages = common->LoadTexture(L"Resources/mario.jpg");
-
-	const DirectX::TexMetadata& metaData = mipImages.GetMetadata();
-	ID3D12Resource* textureResource = CreateTextureResource(dxCommon_->GetDevice(), metaData);
-	common_->UploadTextureData(textureResource, mipImages);
-
-
-	D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc{};
-	srvDesc.Format = metaData.format;
-	srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
-	srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
-	srvDesc.Texture2D.MipLevels = UINT(metaData.mipLevels);
-
-	D3D12_CPU_DESCRIPTOR_HANDLE textureSrvHandleCPU = dxCommon_->GetSrvDescriptorHeap()->GetCPUDescriptorHandleForHeapStart();
-	textureSrvHandleGPU = dxCommon_->GetSrvDescriptorHeap()->GetGPUDescriptorHandleForHeapStart();
-
-	textureSrvHandleCPU.ptr += dxCommon_->GetDevice()->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
-	textureSrvHandleGPU.ptr += dxCommon_->GetDevice()->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
-
-	dxCommon_->GetDevice()->CreateShaderResourceView(textureResource, &srvDesc, textureSrvHandleCPU);
-
+	
+	textureIndex_ = TextureManager::GetInstance()->GetTextureIndexFilePath(textureFilePath);
+	
 	CreateVertex();
 	CreateIndex();
 	CreateMaterial();
@@ -48,18 +30,17 @@ void Sprite::Update()
 	materialData->color = color_;
 	transform.scale = { size.x,size.y,1.0f };
 
-	vertexData[0].position = { -0.5f,-0.5f,0.0f,1.0f };
+	vertexData[0].position = { -0.0f,1.0f,0.0f,1.0f };
 	vertexData[0].texcoord = { 0.0f,1.0f };
 
-	vertexData[1].position = { -0.5f,+0.5f,0.0f,1.0f };
+	vertexData[1].position = { 0.0f,0.0f,0.0f,1.0f };
 	vertexData[1].texcoord = { 0.0f,0.0f };
 
-	vertexData[2].position = { +0.5f,-0.5f,0.0f,1.0f };
+	vertexData[2].position = { 1.0f,1.0f,0.0f,1.0f };
 	vertexData[2].texcoord = { 1.0f,1.0f };
 
-	vertexData[3].position = { +0.5f,+0.5f,0.0f,1.0f };
+	vertexData[3].position = { 1.0f,0.0f,0.0f,1.0f };
 	vertexData[3].texcoord = { 1.0f,0.0f };
-
 
 	ImGui::Begin("Tevture");
 	ImGui::DragFloat3("Pos", &transform.translate.x, 0.1f);
@@ -97,11 +78,13 @@ void Sprite::Draw()
 	XMMATRIX cameraMatrix = XMMatrixMultiply(cameraRotateAndScaleMatrix, cameraTranslationMatrix);
 
 	XMMATRIX view = XMMatrixInverse(nullptr, cameraMatrix);
-	XMMATRIX proj = XMMatrixPerspectiveFovLH(
-		XMConvertToRadians(45.f),
-		(float)WinApp::window_width / (float)WinApp::window_height,
-		0.1f, 100.f
-	);
+	//XMMATRIX proj = XMMatrixPerspectiveFovLH(
+	//	XMConvertToRadians(45.f),
+	//	(float)WinApp::window_width / (float)WinApp::window_height,
+	//	0.1f, 100.f
+	//);
+
+	XMMATRIX proj = XMMatrixOrthographicOffCenterLH(0, WinApp::window_width, WinApp::window_height, 0, 1.0f, 100.0f);
 
 	XMMATRIX worldViewProjectionMatrix = worldMatrix * (view * proj);
 
@@ -134,7 +117,7 @@ void Sprite::Draw()
 
 	dxCommon_->GetCommandList()->SetGraphicsRootConstantBufferView(1, wvpResource->GetGPUVirtualAddress());
 
-	dxCommon_->GetCommandList()->SetGraphicsRootDescriptorTable(2, textureSrvHandleGPU);
+	dxCommon_->GetCommandList()->SetGraphicsRootDescriptorTable(2, TextureManager::GetInstance()->GetSrvHandleGPU(textureIndex_));
 
 	dxCommon_->GetCommandList()->DrawIndexedInstanced(6, 1, 0, 0, 0);
 
@@ -151,16 +134,16 @@ void Sprite::CreateVertex()
 
 	vertexResource->Map(0, nullptr, reinterpret_cast<void**>(&vertexData));
 
-	vertexData[0].position = { -0.5f,-0.5f,0.0f,1.0f };
+	vertexData[0].position = { -0.0f,1.0f,0.0f,1.0f };
 	vertexData[0].texcoord = { 0.0f,1.0f };
 
-	vertexData[1].position = { -0.5f,+0.5f,0.0f,1.0f };
+	vertexData[1].position = { 0.0f,0.0f,0.0f,1.0f };
 	vertexData[1].texcoord = { 0.0f,0.0f };
 
-	vertexData[2].position = { +0.5f,-0.5f,0.0f,1.0f };
+	vertexData[2].position = { 1.0f,1.0f,0.0f,1.0f };
 	vertexData[2].texcoord = { 1.0f,1.0f };
 
-	vertexData[3].position = { +0.5f,+0.5f,0.0f,1.0f };
+	vertexData[3].position = { 1.0f,0.0f,0.0f,1.0f };
 	vertexData[3].texcoord = { 1.0f,0.0f };
 
 	//vertexData[3].position = { -0.5f,+0.5f,0.0f,1.0f };

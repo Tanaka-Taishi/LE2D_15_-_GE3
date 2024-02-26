@@ -31,7 +31,7 @@ private:
 	};
 
 public:
-	void Initialize(DirectXCommon* dxCommon, SpriteCommon* common);
+	void Initialize(SpriteCommon* common,std::wstring textureFilePath);
 
 	void Update();
 
@@ -79,7 +79,7 @@ private:
 	ComPtr<ID3D12Resource>wvpResource;
 	DirectX::XMMATRIX* wvpData = nullptr;
 
-	D3D12_GPU_DESCRIPTOR_HANDLE textureSrvHandleGPU;
+	//D3D12_GPU_DESCRIPTOR_HANDLE textureSrvHandleGPU;
 
 	DirectX::XMFLOAT4 color_ = { 1.0f,1.0f,1.0f,1.0f };
 
@@ -92,7 +92,9 @@ private:
 	float rotation = 0;
 
 
-	DirectX::XMFLOAT2 size = { 1,1 };
+	DirectX::XMFLOAT2 size = { 512,512 };
+
+	uint32_t textureIndex_ = 0;
 
 	Transform cameraTransform = { {1,1,1},{0,0,0},{0,0,-5} };
 };
