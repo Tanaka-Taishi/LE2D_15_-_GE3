@@ -11,8 +11,8 @@ using namespace DirectX;
 void Sprite::Initialize(SpriteCommon* common, std::wstring textureFilePath)
 {
 
-	dxCommon_ = common_;
 	common_ = common;
+	dxCommon_ = common_->GetDirectXCommon();
 	
 	textureIndex_ = TextureManager::GetInstance()->GetTextureIndexFilePath(textureFilePath);
 	
